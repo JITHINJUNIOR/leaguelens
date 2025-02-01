@@ -32,27 +32,20 @@ if uploaded_file is not None:
     mm = pd.read_csv(uploaded_file)
     st.subheader("Dataset Overview")
     st.write(mm)
-
-
-
     if st.checkbox("Show Dataset Description"):
         st.write(mm.describe())
-
     if st.checkbox("Show Missing Values"):
         st.write(mm.isnull().sum())
-
     # Data Cleaning
     mm['xG'] = mm['xG'].fillna(mm['xG'].mean())
     mm['Gls'] = mm['Gls'].fillna(mm['Gls'].mean())
     mm = mm.dropna()
-
     # Sidebar selections for visualizations
     st.sidebar.header("Data Visualization")
     if st.sidebar.checkbox("Heatmap of Missing Values"):
         st.subheader("Heatmap of Missing Values")
         sns.heatmap(mm.isnull(), cbar=False)
         st.pyplot()
-
  # Group players by position and plot
     if st.sidebar.checkbox('Player Positions'):
         st.subheader("Barplot of players position")
@@ -61,7 +54,6 @@ if uploaded_file is not None:
         var1.head(630).plot(kind='bar', ax=ax1, color=sns.color_palette('husl'))
         ax1.set_title('Position of Players')
         st.pyplot(fig1)
-
     # Calculate and display statistics
     tg = math.trunc(mm['Gls'].sum())
     ta = math.trunc(mm['Ast'].sum())
@@ -108,46 +100,36 @@ if uploaded_file is not None:
       fig5, ax4 = plt.subplots()
       ax4.pie(data, labels=labels, colors=colors, autopct='%.0f%%')
       st.pyplot(fig5)
-
     if st.sidebar.checkbox('Pairplot varition '):
        st.subheader("Pairplot of EPL")
        fig6 = sns.pairplot(mm)
        st.pyplot(fig6)
-
-
     # Display unique teams
     if st.sidebar.checkbox('List of Unique Teams'):
        unique_teams = mm['Team'].unique()
        st.write(unique_teams)
-
     # Team with most goals
     if st.sidebar.checkbox('Team with Most Goals'):
       team_goals = mm.groupby('Team')['Gls'].sum()
       team_with_most_goals = team_goals.idxmax()
       most_goals = team_goals.max()
       st.write(f"The team with the most goals is: **{team_with_most_goals}** with **{most_goals}** goals.")
-
     # Player with most goals
     if st.sidebar.checkbox('Player with Most Goals'):
       top_scorer = mm.loc[mm['Gls'].idxmax()]
       st.write(f"The player who scored the most goals is: **{top_scorer['Player']}**")
       st.write(f"Goals scored: **{top_scorer['Gls']}**")
-
-
     # Feature Extraction
     st.sidebar.header("Feature Extraction and Model Training")
     x = mm.drop(columns='Gls')
     y = mm['Gls']
-
     # Data split
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=100)
-
     # Initialize accuracy variables
     lr_accuracy = None
     dt_accuracy = None
     nb_accuracy = None
     pr_accuracy = None
-
     if st.sidebar.checkbox("Run Logistic Regression"):
         st.subheader("Logistic Regression")
         categorical_cols = x_train.select_dtypes(include=['object']).columns
@@ -158,126 +140,89 @@ if uploaded_file is not None:
             ('imputer', SimpleImputer(strategy='most_frequent')),
             ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
         ])
-
         preprocessor = ColumnTransformer(
             transformers=[
                 ('num', numeric_transformer, numerical_cols),
                 ('cat', categorical_transformer, categorical_cols)
             ]
         )
-
         model_pipeline = Pipeline(steps=[
             ('preprocessor', preprocessor),
             ('classifier', LogisticRegression(max_iter=1000))
         ])
-
         y_train_binned = pd.cut(y_train, bins=3, labels=["low", "medium", "high"])
         model_pipeline.fit(x_train, y_train_binned)
         y_pred_lr = model_pipeline.predict(x_test)
         lr_accuracy = accuracy_score(pd.cut(y_test, bins=3, labels=["low", "medium", "high"]), y_pred_lr)
         st.write(f"Logistic Regression Accuracy: {lr_accuracy}")
-
     if st.sidebar.checkbox("Run Decision Tree"):
         st.subheader("Decision Tree")
         label_encoder = LabelEncoder()
         x_train = x_train.apply(lambda col: label_encoder.fit_transform(col) if col.dtypes == 'object' else col)
         x_test = x_test.apply(lambda col: label_encoder.fit_transform(col) if col.dtypes == 'object' else col)
-
         dtc = DecisionTreeClassifier()
         dtc.fit(x_train, y_train)
         y_pred_dt = dtc.predict(x_test)
         dt_accuracy = accuracy_score(y_test, y_pred_dt)
         st.write(f"Decision Tree Accuracy: {dt_accuracy}")
-
     if st.sidebar.checkbox("Run Naive Bayes"):
         st.subheader("Naive Bayes")
         imputer = SimpleImputer(strategy='mean')
         x_train_imputed = imputer.fit_transform(x_train)
         x_test_imputed = imputer.transform(x_test)
-
         nb = GaussianNB()
         nb.fit(x_train_imputed, y_train)
         y_pred_nb = nb.predict(x_test_imputed)
         nb_accuracy = accuracy_score(y_test, y_pred_nb)
         st.write(f"Naive Bayes Accuracy: {nb_accuracy}")
-
     if st.sidebar.checkbox("Run PCA"):
-        st.subheader("PCA")
-    
+        st.subheader("PCA")  
     mm['xG'] = mm['xG'].fillna(mm['xG'].mean())
     mm['Gls'] = mm['Gls'].fillna(mm['Gls'].mean())
-
     x = mm.drop(columns='Gls')
     y = mm['Gls']
-
     # Train-test split
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=100)
-
     # Identify numerical and categorical columns
     numerical_cols = x_train.select_dtypes(include=np.number).columns
     categorical_cols = x_train.select_dtypes(include='object').columns
-
     # Preprocessing pipelines
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='mean')),
         ('scaler', StandardScaler())
     ])
-
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')),
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
-
-    # Combine transformations
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numerical_cols),
             ('cat', categorical_transformer, categorical_cols)
         ]
     )
-
     # Transform data
     x_train_preprocessed = preprocessor.fit_transform(x_train)
     x_test_preprocessed = preprocessor.transform(x_test)
-
-    # Apply PCA
     pca = PCA(n_components=0.95)  # Retain 95% of the variance
     x_train_pca = pca.fit_transform(x_train_preprocessed)
     x_test_pca = pca.transform(x_test_preprocessed)
-
-    # Fit KMeans on PCA-transformed data
     kmeans = KMeans(n_clusters=3, random_state=42)
     kmeans.fit(x_train_pca)
-
-    # Predict clusters
     train_clusters = kmeans.predict(x_train_pca)
     test_clusters = kmeans.predict(x_test_pca)
-
-    # Train a Logistic Regression model
     model = LogisticRegression()
     model.fit(x_train_pca, y_train)
-
-    # Make predictions
     y_pred_lr = model.predict(x_test_pca)
     y_pred_prob_lr = model.predict_proba(x_test_pca)[:, 1]
-
-    # Convert probability predictions to class labels
     if y_test.dtype in ['float64', 'float32']:  
         y_test = (y_test > 0.5).astype(int)  # Convert to binary classes (if binary classification)
-
-    # Compute accuracy
     pr_accuracy = accuracy_score(y_test, y_pred_lr)
-
-    # Compute AUC only for classification problems
     if len(set(y_test)) > 2:  # Multi-class classification
         lr_auc = roc_auc_score(y_test, model.predict_proba(x_test_pca), multi_class='ovr')
     else:  # Binary classification
         lr_auc = roc_auc_score(y_test, y_pred_prob_lr)
-
-
     st.write(f"Model Accuracy: {pr_accuracy:.4f}")
-   
-    # Comparison
     st.subheader("Model Comparison")
     model_comparison = pd.DataFrame({
         'Model': ['Logistic Regression', 'Decision Tree', 'Naive Bayes','PCA'],
@@ -285,7 +230,6 @@ if uploaded_file is not None:
     })
     model_comparison = model_comparison.dropna()
     st.write(model_comparison)
-
     plt.figure(figsize=(8, 5))
     sns.barplot(x='Model', y='Accuracy', data=model_comparison, palette='viridis')
     plt.title('Model Accuracy Comparison')
