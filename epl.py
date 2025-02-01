@@ -100,10 +100,6 @@ if uploaded_file is not None:
       fig5, ax4 = plt.subplots()
       ax4.pie(data, labels=labels, colors=colors, autopct='%.0f%%')
       st.pyplot(fig5)
-    if st.sidebar.checkbox('Pairplot varition '):
-       st.subheader("Pairplot of EPL")
-       fig6 = sns.pairplot(mm)
-       st.pyplot(fig6)
     # Display unique teams
     if st.sidebar.checkbox('List of Unique Teams'):
        unique_teams = mm['Team'].unique()
